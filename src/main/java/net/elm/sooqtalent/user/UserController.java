@@ -1,7 +1,5 @@
-package net.elm.sooqtalent.controller;
+package net.elm.sooqtalent.user;
 
-import net.elm.sooqtalent.model.User;
-import net.elm.sooqtalent.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

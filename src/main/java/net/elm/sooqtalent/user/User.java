@@ -1,4 +1,4 @@
-package net.elm.sooqtalent.model;
+package net.elm.sooqtalent.user;
 
 import jakarta.persistence.*;
 import lombok.*;

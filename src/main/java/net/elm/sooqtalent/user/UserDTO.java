@@ -1,4 +1,4 @@
-package net.elm.sooqtalent.dto;
+package net.elm.sooqtalent.user;
 
 public class UserDTO {
     private Long id;

@@ -1,7 +1,5 @@
-package net.elm.sooqtalent.service;
+package net.elm.sooqtalent.user;
 
-import net.elm.sooqtalent.model.User;
-import net.elm.sooqtalent.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
