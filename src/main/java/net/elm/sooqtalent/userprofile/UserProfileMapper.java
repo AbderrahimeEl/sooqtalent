@@ -10,4 +10,13 @@ public class UserProfileMapper {
                 .experience(userProfile.getExperience())
                 .build();
     }
+    public static UserProfile toEntity(UserProfileDTO dto) {
+        return UserProfile.builder()
+                .bio(dto.getBio())
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .skills(dto.getSkills())
+                .experience(dto.getExperience())
+                .build();
+    }
 }
