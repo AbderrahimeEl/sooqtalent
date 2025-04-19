@@ -1,7 +1,8 @@
-package net.elm.sooqtalent.user;
+package net.elm.sooqtalent.user.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import net.elm.sooqtalent.user.Role;
 
 @Data
 @Builder

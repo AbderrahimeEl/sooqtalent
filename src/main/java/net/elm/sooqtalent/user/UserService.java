@@ -1,5 +1,7 @@
 package net.elm.sooqtalent.user;
 
+import lombok.RequiredArgsConstructor;
+import net.elm.sooqtalent.user.dto.UserDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -7,15 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     public UserDTO register(User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
