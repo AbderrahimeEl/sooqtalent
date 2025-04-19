@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 public class UserProfileController {
     private final UserProfileService userProfileService;
+    private final UserProfileRepository userProfileRepository;
 
     @PostMapping("/{userId}/profile")
     public ResponseEntity<UserProfileDTO> createProfile(@PathVariable Long userId, @RequestBody UserProfileDTO profileDTO) {
@@ -20,12 +21,15 @@ public class UserProfileController {
 
     @PutMapping("/{userId}/profile")
     public ResponseEntity<UserProfileDTO> updateProfile(@PathVariable Long userId, @RequestBody UserProfileDTO profileDTO) {
-        return null;
+        UserProfileDTO updatedProfile = userProfileService.updateUserProfile(userId, profileDTO);
+        return new ResponseEntity<>(updatedProfile, HttpStatus.OK);
     }
+
 
     @GetMapping("/{userId}/profile")
     public ResponseEntity<UserProfileDTO> getProfile(@PathVariable Long userId) {
-        return null;
+        UserProfileDTO profileDTO = userProfileService.getUserProfileByUserId(userId);
+        return new ResponseEntity<>(profileDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/{userId}/profile")

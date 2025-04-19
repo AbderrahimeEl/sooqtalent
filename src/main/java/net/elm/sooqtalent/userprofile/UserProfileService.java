@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import net.elm.sooqtalent.user.User;
+import net.elm.sooqtalent.user.UserMapper;
 import net.elm.sooqtalent.user.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -34,13 +35,32 @@ public class UserProfileService {
     }
 
 
-    UserProfileDTO updateUserProfile(Long userId, UserProfileDTO profileDTO){
-        return null;
+    public UserProfileDTO updateUserProfile(Long userId, UserProfileDTO profileDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User profile not found"));
+        profile.setFirstName(profileDTO.getFirstName());
+        profile.setLastName(profileDTO.getLastName());
+        profile.setBio(profileDTO.getBio());
+        profile.setSkills(profileDTO.getSkills());
+        profile.setExperience(profileDTO.getExperience());
+
+        UserProfile updatedProfile = userProfileRepository.save(profile);
+        return UserProfileMapper.toDTO(updatedProfile);
     }
 
-    UserProfileDTO getUserProfileByUserId(Long userId){
-        return null;
+    public UserProfileDTO getUserProfileByUserId(Long userId) {
+        UserProfile userProfile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User profile does not exist"));
+        return UserProfileMapper.toDTO(userProfile);
     }
 
-    void deleteUserProfile(Long userId){}
+    public void deleteUserProfile(Long userId) {
+        UserProfile userProfile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User profile does not exist"));
+
+        userProfileRepository.delete(userProfile);
+    }
 }
