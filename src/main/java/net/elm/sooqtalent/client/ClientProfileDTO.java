@@ -6,7 +6,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Data
 public class ClientProfileDTO {
     private String companyName;
     private String companyWebsite;
