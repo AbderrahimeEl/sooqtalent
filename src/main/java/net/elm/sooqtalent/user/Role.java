@@ -1,6 +1,7 @@
 package net.elm.sooqtalent.user;
 
 public enum Role {
-    USER,
+    CLIENT,
+    FREELANCER,
     ADMIN
 }

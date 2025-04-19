@@ -23,7 +23,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         if (user.getRole() == null) {
-            user.setRole(Role.USER);
+            user.setRole(Role.CLIENT);
         }
 
         return UserMapper.toDTO(userRepository.save(user));
