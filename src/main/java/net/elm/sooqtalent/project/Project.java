@@ -2,9 +2,13 @@ package net.elm.sooqtalent.project;
 
 import jakarta.persistence.*;
 import lombok.*;
+import net.elm.sooqtalent.client.ClientProfile;
+import net.elm.sooqtalent.freelancer.FreelancerProfile;
 import net.elm.sooqtalent.user.User;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -32,6 +36,24 @@ public class Project {
 
     @ManyToOne
     @JoinColumn(name = "client_id")
-    private User client;
+    private ClientProfile client;
+
+    @ManyToMany
+    @JoinTable(
+            name = "project_freelancer",
+            joinColumns = @JoinColumn(name = "project_id"),
+            inverseJoinColumns = @JoinColumn(name = "freelancer_id")
+    )
+    private Set<FreelancerProfile> freelancers = new HashSet<>();
+
+    public void addFreelancer(FreelancerProfile freelancer) {
+        this.freelancers.add(freelancer);
+        freelancer.getProjects().add(this);
+    }
+
+    public void removeFreelancer(FreelancerProfile freelancer) {
+        this.freelancers.remove(freelancer);
+        freelancer.getProjects().remove(this);
+    }
 }
 
