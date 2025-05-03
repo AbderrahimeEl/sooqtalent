@@ -2,12 +2,11 @@ package net.elm.sooqtalent.user;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.Collection;
-import java.util.List;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
+import net.elm.sooqtalent.client.ClientProfile;
+import net.elm.sooqtalent.freelancer.FreelancerProfile;
 
 @Entity
 @NoArgsConstructor
@@ -16,47 +15,36 @@ import java.util.List;
 @Setter
 @Builder
 @Table(name = "users")
-public class User implements UserDetails {
-
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
-    }
+    private String firstName;
+    private String lastName;
+    private String phone;
+    private String location;
+    private String profilePictureUrl;
+    private String bio;
 
-    @Override
-    public String getUsername() {
-        return email; // updated from fullName to email for standard login
-    }
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClientProfile clientProfile;
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private FreelancerProfile freelancerProfile;
 }

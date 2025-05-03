@@ -1,42 +1,56 @@
 package net.elm.sooqtalent.user;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.elm.sooqtalent.exception.ResourceNotFoundException;
+import net.elm.sooqtalent.user.dto.UserCreateRequest;
 import net.elm.sooqtalent.user.dto.UserDTO;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
-public class UserService {
+    @Service
+    @RequiredArgsConstructor
+    public class UserService {
+        private final UserRepository userRepo;
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+        @Transactional
+        public UserDTO updateUserProfile(UserDTO dto, Long userId) {
+            User user = userRepo.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-    public UserDTO register(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            user.setFirstName(dto.getFirstName());
+            user.setLastName(dto.getLastName());
+            user.setPhone(dto.getPhone());
+            user.setLocation(dto.getLocation());
+            user.setBio(dto.getBio());
+            user.setProfilePictureUrl(dto.getProfilePictureUrl());
+
+            return UserMapper.toDTO(userRepo.save(user));
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        if (user.getRole() == null) {
-            user.setRole(Role.CLIENT);
+        public UserDTO getUserProfile(Long userId) {
+            return userRepo.findById(userId)
+                    .map(UserMapper::toDTO)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         }
 
-        return UserMapper.toDTO(userRepository.save(user));
-    }
+        @Transactional
+        public UserDTO createUser(UserCreateRequest request) {
+            if(userRepo.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email already registered");
+            }
 
-    public List<UserDTO> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserMapper::toDTO)
-                .toList();
-    }
+            User user = new User();
+            user.setEmail(request.getEmail());
+            user.setPassword(request.getPassword());
+            user.setRole(request.getRole());
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setPhone(request.getPhone());
+            user.setLocation(request.getLocation());
 
-    public Optional<UserDTO> getUserById(Long id) {
-        return userRepository.findById(id).map(UserMapper::toDTO);
+            User savedUser = userRepo.save(user);
+            return UserMapper.toDTO(savedUser);
+        }
+
     }
-}

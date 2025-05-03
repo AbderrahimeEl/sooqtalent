@@ -1,40 +1,48 @@
 package net.elm.sooqtalent.freelancer;
 
-import net.elm.sooqtalent.project.Project;
-
-import java.util.List;
+import net.elm.sooqtalent.projectApplication.ProjectApplication;
+import net.elm.sooqtalent.skill.Skill;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FreelancerProfileMapper {
-    public static FreelancerProfileDTO toDTO(FreelancerProfile profile) {
-        return FreelancerProfileDTO.builder()
+
+    public static FreelancerProfileResponse toResponse(FreelancerProfile profile) {
+        return FreelancerProfileResponse.builder()
                 .id(profile.getId())
                 .title(profile.getTitle())
-                .skills(profile.getSkills())
+                .skills(mapSkills(profile.getSkills()))
                 .education(profile.getEducation())
                 .certifications(profile.getCertifications())
                 .githubUrl(profile.getGithubUrl())
-                .projectIds(getProjectIds(profile))
+                .hourlyRate(profile.getHourlyRate())
+                .createdAt(profile.getCreatedAt())
+                .updatedAt(profile.getUpdatedAt())
+                .userId(profile.getUser().getId())
                 .build();
     }
 
-    public static FreelancerProfile toEntity(FreelancerProfileDTO dto) {
+    public static FreelancerProfile toEntity(FreelancerProfileRequest request) {
         return FreelancerProfile.builder()
-                .id(dto.getId())
-                .title(dto.getTitle())
-                .skills(dto.getSkills())
-                .education(dto.getEducation())
-                .certifications(dto.getCertifications())
-                .githubUrl(dto.getGithubUrl())
+                .title(request.getTitle())
+                .education(request.getEducation())
+                .certifications(request.getCertifications())
+                .githubUrl(request.getGithubUrl())
+                .hourlyRate(request.getHourlyRate())
                 .build();
     }
 
-    private static List<Long> getProjectIds(FreelancerProfile profile) {
-        if (profile.getProjects() == null) {
-            return List.of();
-        }
-        return profile.getProjects().stream()
-                .map(Project::getId)
-                .collect(Collectors.toList());
+    private static Set<String> mapSkills(Set<Skill> skills) {
+        if (skills == null) return Set.of();
+        return skills.stream()
+                .map(Skill::getName)
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<Long> mapApplicationIds(Set<ProjectApplication> applications) {
+        if (applications == null) return Set.of();
+        return applications.stream()
+                .map(ProjectApplication::getId)
+                .collect(Collectors.toSet());
     }
 }

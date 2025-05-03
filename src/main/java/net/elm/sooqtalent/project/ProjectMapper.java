@@ -1,48 +1,33 @@
 package net.elm.sooqtalent.project;
 
-import net.elm.sooqtalent.freelancer.FreelancerProfile;
+import net.elm.sooqtalent.projectApplication.ProjectApplication;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class ProjectMapper {
-    public static ProjectDTO toDTO(Project project) {
-        return ProjectDTO.builder()
+
+    public static ProjectResponse toResponse(Project project) {
+        return ProjectResponse.builder()
                 .id(project.getId())
                 .title(project.getTitle())
                 .description(project.getDescription())
-                .category(project.getCategory())
                 .budget(project.getBudget())
                 .deadline(project.getDeadline())
                 .createdAt(project.getCreatedAt())
-                .clientId(getClientId(project))
-                .freelancerIds(getFreelancerIds(project))
+                .status(project.getStatus())
+                .clientId(project.getClient().getId())
+                .applicationIds(project.getApplications().stream()
+                        .map(ProjectApplication::getId)
+                        .collect(Collectors.toSet()))
                 .build();
     }
 
-    public static Project toEntity(ProjectDTO dto) {
+    public static Project toEntity(ProjectRequest request) {
         return Project.builder()
-                .id(dto.getId())
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .category(dto.getCategory())
-                .budget(dto.getBudget())
-                .deadline(dto.getDeadline())
-                .createdAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .budget(request.getBudget())
+                .deadline(request.getDeadline())
                 .build();
-    }
-
-    private static List<Long> getFreelancerIds(Project project) {
-        if (project.getFreelancers() == null) {
-            return List.of();
-        }
-        return project.getFreelancers().stream()
-                .map(FreelancerProfile::getId)
-                .collect(Collectors.toList());
-    }
-
-    private static Long getClientId(Project project) {
-        return project.getClient() != null ? project.getClient().getId() : null;
     }
 }

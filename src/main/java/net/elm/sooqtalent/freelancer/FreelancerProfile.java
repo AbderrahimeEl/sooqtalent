@@ -2,9 +2,13 @@ package net.elm.sooqtalent.freelancer;
 
 import jakarta.persistence.*;
 import lombok.*;
+import net.elm.sooqtalent.projectApplication.ProjectApplication;
+import net.elm.sooqtalent.skill.Skill;
 import net.elm.sooqtalent.user.User;
-import net.elm.sooqtalent.project.Project;
-
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,25 +25,34 @@ public class FreelancerProfile {
     private Long id;
 
     private String title;
-    private String skills;
+
+    @ManyToMany
+    @JoinTable(
+            name = "freelancer_skill",
+            joinColumns = @JoinColumn(name = "freelancer_id"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skills = new HashSet<>();
+
     private String education;
     private String certifications;
     private String githubUrl;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal hourlyRate;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToMany(mappedBy = "freelancers")
-    private Set<Project> projects = new HashSet<>();
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL)
+    private Set<ProjectApplication> applications = new HashSet<>();
 
-    public void addProject(Project project) {
-        this.projects.add(project);
-        project.getFreelancers().add(this);
-    }
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
-    public void removeProject(Project project) {
-        this.projects.remove(project);
-        project.getFreelancers().remove(this);
-    }
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
 }

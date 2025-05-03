@@ -10,4 +10,7 @@ public interface FreelancerProfileRepository extends JpaRepository<FreelancerPro
     Optional<FreelancerProfile> findByUser(User user);
     @EntityGraph(attributePaths = {"projects"})
     Optional<FreelancerProfile> findWithProjectsById(Long freelancerId);
+    Optional<FreelancerProfile> findByUserId(Long userId);
+    boolean existsByUser(User user);
+
 }

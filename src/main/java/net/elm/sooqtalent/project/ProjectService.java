@@ -1,99 +1,89 @@
 package net.elm.sooqtalent.project;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.elm.sooqtalent.category.Category;
+import net.elm.sooqtalent.category.CategoryRepository;
+import net.elm.sooqtalent.client.ClientProfile;
 import net.elm.sooqtalent.client.ClientProfileRepository;
-import net.elm.sooqtalent.exception.ResourceNotFoundException;
-import net.elm.sooqtalent.freelancer.FreelancerProfile;
-import net.elm.sooqtalent.freelancer.FreelancerProfileDTO;
-import net.elm.sooqtalent.freelancer.FreelancerProfileMapper;
-import net.elm.sooqtalent.freelancer.FreelancerProfileRepository;
-import net.elm.sooqtalent.user.UserRepository;
-import net.elm.sooqtalent.userprofile.UserProfileRepository;
+import net.elm.sooqtalent.exception.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
+    private final ProjectRepository projectRepo;
+    private final ClientProfileRepository clientRepo;
+    private final CategoryRepository categoryRepo;
 
-    private final ProjectRepository projectRepository;
-    private final ClientProfileRepository clientProfileRepository;
-    private final FreelancerProfileRepository freelancerProfileRepository;
+    @Transactional
+    public ProjectResponse createProject(ProjectRequest request, Long clientId) {
+        ClientProfile client = clientRepo.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
-    public ProjectDTO createProject(Long clientId, ProjectDTO dto) {
-        var user = clientProfileRepository.findById(clientId)
-                .orElseThrow(() -> new RuntimeException("Client not found"));
+        Category category = categoryRepo.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        var project = ProjectMapper.toEntity(dto);
-        project.setClient(user);
-        var saved = projectRepository.save(project);
+        Project project = Project.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .category(category)
+                .budget(request.getBudget())
+                .deadline(request.getDeadline())
+                .client(client)
+                .build();
 
-        return ProjectMapper.toDTO(saved);
+        return ProjectMapper.toResponse(projectRepo.save(project));
     }
 
-    public List<ProjectDTO> getProjectsByClient(Long clientId) {
-        var client = clientProfileRepository.findById(clientId)
-                .orElseThrow(() -> new RuntimeException("Client not found"));
-
-        return projectRepository.findByClient(client).stream()
-                .map(ProjectMapper::toDTO)
-                .toList();
+    public ProjectResponse getProjectById(Long id) {
+        return projectRepo.findById(id)
+                .map(ProjectMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
     }
 
-    public ProjectDTO getById(Long projectId) {
-        return projectRepository.findById(projectId)
-                .map(ProjectMapper::toDTO)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+    public Page<ProjectResponse> getAllProjects(ProjectStatus status, Pageable pageable) {
+        return projectRepo.findAllByStatus(status, pageable)
+                .map(ProjectMapper::toResponse);
     }
 
-    public void assignFreelancerToProject(Long projectId, Long freelancerId) {
-        Project project = projectRepository.findWithFreelancersById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", projectId));
+    @Transactional
+    public ProjectResponse updateProjectStatus(Long id, ProjectStatus status) {
+        Project project = projectRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        FreelancerProfile freelancer = freelancerProfileRepository.findById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer", freelancerId));
-
-        if (project.getFreelancers().contains(freelancer)) {
-            throw new ResourceNotFoundException("Freelancer is already assigned to this project");
+        if(project.getStatus() == ProjectStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot modify completed projects");
         }
 
-        project.addFreelancer(freelancer);
-        projectRepository.save(project);
+        project.setStatus(status);
+        return ProjectMapper.toResponse(projectRepo.save(project));
     }
 
-    public void removeFreelancerFromProject(Long projectId, Long freelancerId) {
-        Project project = projectRepository.findWithFreelancersById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", projectId));
-
-        FreelancerProfile freelancer = freelancerProfileRepository.findById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer", freelancerId));
-
-        if (!project.getFreelancers().contains(freelancer)) {
-            throw new ResourceNotFoundException("Freelancer is not assigned to this project");
+    @Transactional
+    public void deleteProject(Long id) {
+        if(!projectRepo.existsById(id)) {
+            throw new ResourceNotFoundException("Project not found");
         }
-
-        project.removeFreelancer(freelancer);
-        projectRepository.save(project);
+        projectRepo.deleteById(id);
     }
 
-    public Set<FreelancerProfileDTO> getProjectFreelancers(Long projectId) {
-        Project project = projectRepository.findWithFreelancersById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", projectId));
+    @Transactional
+    public ProjectResponse updateProject(Long id, ProjectRequest request) {
+        Project project = projectRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        return project.getFreelancers().stream()
-                .map(FreelancerProfileMapper::toDTO)
-                .collect(Collectors.toSet());
-    }
+        Category category = categoryRepo.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-    public Set<ProjectDTO> getFreelancerProjects(Long freelancerId) {
-        FreelancerProfile freelancer = freelancerProfileRepository.findWithProjectsById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer", freelancerId));
+        project.setTitle(request.getTitle());
+        project.setDescription(request.getDescription());
+        project.setCategory(category);
+        project.setBudget(request.getBudget());
+        project.setDeadline(request.getDeadline());
 
-        return freelancer.getProjects().stream()
-                .map(ProjectMapper::toDTO)
-                .collect(Collectors.toSet());
+        return ProjectMapper.toResponse(projectRepo.save(project));
     }
 }

@@ -1,7 +1,11 @@
 package net.elm.sooqtalent.project;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.elm.sooqtalent.freelancer.FreelancerProfileDTO;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,51 +13,49 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/projects")
 public class ProjectController {
 
     private final ProjectService projectService;
 
-    @PostMapping("/client/{clientId}")
-    public ResponseEntity<ProjectDTO> createProject(
+    public ProjectController(ProjectService projectService) {
+        this.projectService = projectService;
+    }
+
+    @PostMapping("/clients/{clientId}")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ProjectResponse> createProject(
             @PathVariable Long clientId,
-            @RequestBody ProjectDTO dto) {
-        return ResponseEntity.ok(projectService.createProject(clientId, dto));
+            @Valid @RequestBody ProjectRequest request) {
+        ProjectResponse response = projectService.createProject(request, clientId);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @GetMapping("/client/{clientId}")
-    public ResponseEntity<List<ProjectDTO>> getClientProjects(@PathVariable Long clientId) {
-        return ResponseEntity.ok(projectService.getProjectsByClient(clientId));
+    @GetMapping("/{id}")
+    public ResponseEntity<ProjectResponse> getProject(@PathVariable Long id) {
+        return ResponseEntity.ok(projectService.getProjectById(id));
     }
 
-    @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectDTO> getProject(@PathVariable Long projectId) {
-        return ResponseEntity.ok(projectService.getById(projectId));
+    // To fix
+//    @GetMapping
+//    public ResponseEntity<List<ProjectResponse>> getAllProjects(
+//            @RequestParam(required = false) ProjectStatus status) {
+//        Pageable pageable = new Pageable();
+//        return ResponseEntity.ok(projectService.getAllProjects(status,pageable));
+//    }
+
+    @PatchMapping("/{id}/status")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ProjectResponse> updateProjectStatus(
+            @PathVariable Long id,
+            @RequestParam ProjectStatus status) {
+        return ResponseEntity.ok(projectService.updateProjectStatus(id, status));
     }
 
-    @PostMapping("/{projectId}/freelancers/{freelancerId}")
-    public ResponseEntity<String> assignFreelancerToProject(
-            @PathVariable Long projectId,
-            @PathVariable Long freelancerId) {
-        projectService.assignFreelancerToProject(projectId, freelancerId);
-        return ResponseEntity.ok("Freelancer successfully assigned to project");
-    }
-    @DeleteMapping("/{projectId}/freelancers/{freelancerId}")
-    public ResponseEntity<String> removeFreelancerFromProject(
-            @PathVariable Long projectId,
-            @PathVariable Long freelancerId) {
-        projectService.removeFreelancerFromProject(projectId, freelancerId);
-        return ResponseEntity.ok("Freelancer successfully removed from project");
-    }
-    @GetMapping("/{projectId}/freelancers")
-    public ResponseEntity<Set<FreelancerProfileDTO>> getProjectFreelancers(
-            @PathVariable Long projectId) {
-        return ResponseEntity.ok(projectService.getProjectFreelancers(projectId));
-    }
-    @GetMapping("/freelancers/{freelancerId}")
-    public ResponseEntity<Set<ProjectDTO>> getFreelancerProjects(
-            @PathVariable Long freelancerId) {
-        return ResponseEntity.ok(projectService.getFreelancerProjects(freelancerId));
+    @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.noContent().build();
     }
 }

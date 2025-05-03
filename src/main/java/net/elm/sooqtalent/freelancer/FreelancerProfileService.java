@@ -2,74 +2,100 @@ package net.elm.sooqtalent.freelancer;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import net.elm.sooqtalent.exception.ResourceNotFoundException;
-import net.elm.sooqtalent.project.Project;
-import net.elm.sooqtalent.project.ProjectDTO;
-import net.elm.sooqtalent.project.ProjectMapper;
-import net.elm.sooqtalent.project.ProjectRepository;
+import net.elm.sooqtalent.exception.*;
+import net.elm.sooqtalent.project.*;
+import net.elm.sooqtalent.projectApplication.*;
+import net.elm.sooqtalent.skill.Skill;
+import net.elm.sooqtalent.skill.SkillRepository;
+import net.elm.sooqtalent.skill.SkillService;
+import net.elm.sooqtalent.user.Role;
 import net.elm.sooqtalent.user.User;
 import net.elm.sooqtalent.user.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FreelancerProfileService {
-
-    private final FreelancerProfileRepository freelancerProfileRepository;
-    private final UserRepository userRepository;
-    private final ProjectRepository projectRepository;
+    private final FreelancerProfileRepository freelancerRepo;
+    private final SkillRepository skillRepo;
+    private final UserRepository userRepo;
+    private final SkillService skillService;
 
     @Transactional
-    public FreelancerProfileDTO createProfile(Long userId, FreelancerProfileDTO dto) {
-        User user = userRepository.findById(userId)
+    public FreelancerProfileResponse createProfile(FreelancerProfileRequest request, Long userId) {
+        User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (freelancerProfileRepository.findByUser(user).isPresent()) {
-            throw new ResourceNotFoundException("Profile already exists for this user");
+        if(user.getRole() != Role.FREELANCER) {
+            throw new UnauthorizedRoleException("User must have FREELANCER role to create profile");
         }
 
-        FreelancerProfile profile = FreelancerProfileMapper.toEntity(dto);
-        profile.setUser(user);
-        return FreelancerProfileMapper.toDTO(freelancerProfileRepository.save(profile));
-    }
+        if(freelancerRepo.existsByUser(user)) {
+            throw new ProfileExistsException("Freelancer profile already exists for this user");
+        }
 
-    public FreelancerProfileDTO getProfile(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        return freelancerProfileRepository.findByUser(user)
-                .map(FreelancerProfileMapper::toDTO)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
-    }
-
-    public void assignToProject(Long freelancerId, Long projectId) {
-        FreelancerProfile freelancer = freelancerProfileRepository.findById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer not found"));
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
-        freelancer.addProject(project);
-        freelancerProfileRepository.save(freelancer);
-    }
-
-    public void removeFromProject(Long freelancerId, Long projectId) {
-        FreelancerProfile freelancer = freelancerProfileRepository.findById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer not found"));
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-
-        freelancer.removeProject(project);
-        freelancerProfileRepository.save(freelancer);
-    }
-
-    public Set<ProjectDTO> getFreelancerProjects(Long freelancerId) {
-        FreelancerProfile freelancer = freelancerProfileRepository.findWithProjectsById(freelancerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Freelancer not found"));
-        return freelancer.getProjects().stream()
-                .map(ProjectMapper::toDTO)
+        Set<Skill> skills = request.getSkills().stream()
+                .map(skillName -> skillRepo.findByName(skillName)
+                        .orElseGet(() -> skillService.createSkill(skillName))
+                )
                 .collect(Collectors.toSet());
+
+        FreelancerProfile profile = FreelancerProfile.builder()
+                .title(request.getTitle())
+                .skills(skills)
+                .education(request.getEducation())
+                .certifications(request.getCertifications())
+                .githubUrl(request.getGithubUrl())
+                .hourlyRate(request.getHourlyRate())
+                .user(user)
+                .build();
+
+        FreelancerProfile savedProfile = freelancerRepo.save(profile);
+        return FreelancerProfileMapper.toResponse(savedProfile);
+    }
+
+    public FreelancerProfileResponse getProfile(Long id) {
+        return freelancerRepo.findById(id)
+                .map(FreelancerProfileMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Freelancer profile not found"));
+    }
+
+    public FreelancerProfileResponse getProfileByUserId(Long userId) {
+        return freelancerRepo.findByUserId(userId)
+                .map(FreelancerProfileMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Freelancer profile not found"));
+    }
+
+    @Transactional
+    public FreelancerProfileResponse updateProfile(Long id, FreelancerProfileRequest request) {
+        FreelancerProfile profile = freelancerRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Freelancer profile not found"));
+
+        Set<Skill> skills = request.getSkills().stream()
+                .map(skillName -> skillRepo.findByName(skillName)
+                        .orElseGet(() -> skillService.createSkill(skillName))
+                )
+                .collect(Collectors.toSet());
+
+        profile.setTitle(request.getTitle());
+        profile.setSkills(skills);
+        profile.setEducation(request.getEducation());
+        profile.setCertifications(request.getCertifications());
+        profile.setGithubUrl(request.getGithubUrl());
+        profile.setHourlyRate(request.getHourlyRate());
+
+        return FreelancerProfileMapper.toResponse(freelancerRepo.save(profile));
+    }
+
+    @Transactional
+    public void deleteProfile(Long id) {
+        if(!freelancerRepo.existsById(id)) {
+            throw new ResourceNotFoundException("Freelancer profile not found");
+        }
+        freelancerRepo.deleteById(id);
     }
 }
