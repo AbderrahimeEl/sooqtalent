@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: sooqtalent-app
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/sooqtalent?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+    ports:
+      - "8080:8080"
+    restart: always
+
   db:
     image: mysql:latest
     container_name: mysql-cont
